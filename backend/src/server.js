@@ -1,4 +1,5 @@
 import express from "express";
+import { eq, and } from "drizzle-orm";
 import env from "./config/env.js";
 import { db } from "./config/db.js";
 import { favouritesTable } from "./db/schema.js";
@@ -47,6 +48,49 @@ app.post("/api/favourites", async (req, res) => {
     console.error("Error adding favourite:", error);
     res.status(500).json({
       error: "Failed to add favourite",
+      details: error.message,
+    });
+  }
+});
+
+// delete route for deleting a favourite
+app.delete("/api/favourites/:userId/:recipeId", async (req, res) => {
+  try {
+    const { userId, recipeId } = req.params;
+
+    // Validation: check required params
+    if (!userId || !recipeId) {
+      return res.status(400).json({
+        error: "Missing required parameters: userId and recipeId are required",
+      });
+    }
+
+    // Delete favourite and check if it existed
+    const deleted = await db
+      .delete(favouritesTable)
+      .where(
+        and(
+          eq(favouritesTable.userId, userId),
+          eq(favouritesTable.recipeId, parseInt(recipeId))
+        )
+      )
+      .returning();
+
+    // Check if favourite was found and deleted
+    if (deleted.length === 0) {
+      return res.status(404).json({
+        error: "Favourite not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Favourite deleted successfully",
+      data: deleted[0],
+    });
+  } catch (error) {
+    console.error("Error deleting favourite:", error);
+    res.status(500).json({
+      error: "Failed to delete favourite",
       details: error.message,
     });
   }
