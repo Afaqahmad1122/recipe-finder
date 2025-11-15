@@ -96,6 +96,38 @@ app.delete("/api/favourites/:userId/:recipeId", async (req, res) => {
   }
 });
 
+// get route for getting all favourites
+app.get("/api/favourites/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Validation: check required param
+    if (!userId) {
+      return res.status(400).json({
+        error: "Missing required parameter: userId is required",
+      });
+    }
+
+    // Fetch all favourites for the user
+    const favourites = await db
+      .select()
+      .from(favouritesTable)
+      .where(eq(favouritesTable.userId, userId));
+
+    res.status(200).json({
+      message: "Favourites retrieved successfully",
+      data: favourites,
+      count: favourites.length,
+    });
+  } catch (error) {
+    console.error("Error getting favourites:", error);
+    res.status(500).json({
+      error: "Failed to get favourites",
+      details: error.message,
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
